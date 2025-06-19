@@ -2,6 +2,11 @@
 
 A modern, async-first Python SDK for the Carespace API with full type safety using Pydantic models.
 
+[![PyPI version](https://badge.fury.io/py/carespace-sdk.svg)](https://badge.fury.io/py/carespace-sdk)
+[![Python versions](https://img.shields.io/pypi/pyversions/carespace-sdk.svg)](https://pypi.org/project/carespace-sdk/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Test Coverage](https://codecov.io/gh/carespace/python-sdk/branch/main/graph/badge.svg)](https://codecov.io/gh/carespace/python-sdk)
+
 ## Features
 
 - 🚀 **Async/Await First** - Built for modern Python with async/await support
@@ -12,6 +17,13 @@ A modern, async-first Python SDK for the Carespace API with full type safety usi
 - 🎯 **Developer Friendly** - Intuitive API design with excellent IDE support
 - 📊 **Data Science Ready** - Perfect for healthcare analytics and research
 - 🧪 **Test Coverage** - Comprehensive test suite with pytest
+
+## Documentation
+
+- 📖 [API Reference](docs/api-reference.md) - Complete API documentation
+- 🚀 [Usage Guide](docs/usage-guide.md) - Comprehensive examples and patterns
+- 🤝 [Contributing Guide](docs/contributing.md) - Development setup and guidelines
+- 🔄 [Migration Guide](docs/migration-guide.md) - Migrate from other SDKs
 
 ## Requirements
 
@@ -675,66 +687,83 @@ async def test_users_with_mock():
         assert users.data[0].email == "test@example.com"
 ```
 
-## Configuration
+## Advanced Usage
 
-### Environment Variables
+### Custom Configuration
 
 ```python
 import os
 from carespace_sdk import CarespaceClient
 
-# Use environment variables
+# Environment-based configuration
 client = CarespaceClient(
     base_url=os.getenv("CARESPACE_BASE_URL", "https://api-dev.carespace.ai"),
     api_key=os.getenv("CARESPACE_API_KEY"),
     timeout=float(os.getenv("CARESPACE_TIMEOUT", "30.0")),
+    max_retries=int(os.getenv("CARESPACE_MAX_RETRIES", "3"))
 )
 ```
 
-### Configuration File
+### Data Science Integration
 
 ```python
-# config.py
-from dataclasses import dataclass
-from typing import Optional
+import pandas as pd
 
-@dataclass
-class CarespaceConfig:
-    base_url: str = "https://api-dev.carespace.ai"
-    api_key: Optional[str] = None
-    timeout: float = 30.0
-    max_retries: int = 3
-
-# Usage
-from config import CarespaceConfig
-
-config = CarespaceConfig(
-    base_url="https://api.carespace.ai",
-    api_key="your-production-key",
-    timeout=60.0
-)
-
-client = CarespaceClient(**config.__dict__)
+async def get_client_analytics():
+    async with CarespaceClient(api_key="your-key") as client:
+        # Get all clients
+        clients_response = await client.clients.get_clients(limit=1000)
+        
+        # Convert to DataFrame for analysis
+        df = pd.DataFrame([client.dict() for client in clients_response.data])
+        
+        # Perform analytics
+        print(f"Total clients: {len(df)}")
+        print(f"Active clients: {df['is_active'].sum()}")
+        print(f"Gender distribution:\n{df['gender'].value_counts()}")
+        
+        return df
 ```
 
-## Performance Tips
+### Bulk Operations
 
-1. **Use Connection Pooling**: The SDK automatically manages connection pooling
-2. **Batch Operations**: Use pagination effectively for large datasets
-3. **Async Context Managers**: Always use `async with` for proper resource cleanup
-4. **Configure Timeouts**: Set appropriate timeouts for your use case
-5. **Handle Rate Limits**: Implement proper retry logic for rate-limited operations
+```python
+async def bulk_create_clients(client_data_list):
+    """Create multiple clients with error handling."""
+    created = []
+    errors = []
+    
+    async with CarespaceClient(api_key="your-key") as client:
+        for i, client_data in enumerate(client_data_list):
+            try:
+                new_client = await client.clients.create_client(client_data)
+                created.append(new_client)
+                print(f"✅ Created client {i+1}: {new_client.name}")
+            except CarespaceError as e:
+                errors.append({"index": i, "data": client_data, "error": str(e)})
+                print(f"❌ Failed to create client {i+1}: {e.message}")
+    
+    return {"created": created, "errors": errors}
+```
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes with tests
-4. Run the test suite (`pytest`)
-5. Check code quality (`black`, `isort`, `flake8`, `mypy`)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+We welcome contributions! Please see our [Contributing Guide](docs/contributing.md) for details on:
+
+- Setting up the development environment
+- Code standards and style guide
+- Running tests and quality checks
+- Submitting pull requests
+
+Quick start for contributors:
+
+```bash
+git clone https://github.com/carespace/python-sdk.git
+cd python-sdk
+pip install -e ".[dev]"
+pre-commit install
+pytest  # Run tests
+```
 
 ## License
 
